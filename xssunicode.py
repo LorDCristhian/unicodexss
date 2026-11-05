@@ -42,24 +42,22 @@ diccionario_comillas_dobles = {
 }
 
 
-def reemplazar_con_correlativo(texto, menor, mayor, contador):
+def reemplazar_con_correlativo(texto, menor, mayor):
     """
     Reemplaza cada < y > individual por su variante.
-    Cada reemplazo incrementa el contador y añade el número
+    Cada reemplazo incrementa un contador y el número se inserta
     justo después del texto 'proof' que haya en el payload.
-    Devuelve (nuevo_texto, contador_actualizado).
+    El contador se reinicia en cada combinación.
     """
-    nuevo = texto
-
-    # Recorremos el texto carácter a carácter para reemplazar < y > individualmente
-    # y llevar el correlativo por cada reemplazo.
+    contador = 0
     resultado = []
-    for ch in nuevo:
+    marcadores = []
+
+    for ch in texto:
         if ch == "<" and menor is not None:
             contador += 1
             resultado.append(menor)
-            # insertamos el número en el "proof" que venga después
-            resultado.append(f"__CORR_{contador}__")
+            marcadores.append(contador)
         elif ch == ">" and mayor is not None:
             contador += 1
             resultado.append(mayor)
@@ -68,35 +66,18 @@ def reemplazar_con_correlativo(texto, menor, mayor, contador):
 
     nuevo = "".join(resultado)
 
-    # Ahora movemos los marcadores __CORR_N__ al lado del 'proof'
-    # Estrategia: reemplazar 'proof' por 'proof' + los números acumulados
-    # que aún no se han consumido.
-    marcadores = []
-    i = 0
-    while True:
-        idx = nuevo.find("__CORR_", i)
-        if idx == -1:
-            break
-        end = nuevo.find("__", idx + 7)
-        if end == -1:
-            break
-        num = nuevo[idx + 7:end]
-        marcadores.append(num)
-        nuevo = nuevo[:idx] + nuevo[end + 2:]
-        i = idx
-
     # Insertar los números después de cada 'proof' encontrado
     if marcadores:
         partes = nuevo.split("proof")
         reconstruido = partes[0]
         for j, parte in enumerate(partes[1:]):
             if j < len(marcadores):
-                reconstruido += "proof" + marcadores[j] + parte
+                reconstruido += "proof" + str(marcadores[j]) + parte
             else:
                 reconstruido += "proof" + parte
         nuevo = reconstruido
 
-    return nuevo, contador
+    return nuevo
 
 
 def generar_combinaciones(texto):
@@ -126,9 +107,7 @@ def generar_combinaciones(texto):
             if doble is not None:
                 nuevo = nuevo.replace('"', doble)
 
-            # Aplicamos reemplazo de < y > con correlativo
-            # El contador se reinicia en 1 para cada combinación
-            nuevo, _ = reemplazar_con_correlativo(nuevo, menor, mayor, 0)
+            nuevo = reemplazar_con_correlativo(nuevo, menor, mayor)
 
             resultados.append(nuevo)
 
