@@ -42,46 +42,9 @@ diccionario_comillas_dobles = {
 }
 
 
-def reemplazar_con_correlativo(texto, menor, mayor):
-    """
-    Reemplaza cada < y > individual por su variante.
-    Cada reemplazo incrementa un contador y el número se inserta
-    justo después del texto 'proof' que haya en el payload.
-    El contador se reinicia en cada combinación.
-    """
-    contador = 0
-    resultado = []
-    marcadores = []
-
-    for ch in texto:
-        if ch == "<" and menor is not None:
-            contador += 1
-            resultado.append(menor)
-            marcadores.append(contador)
-        elif ch == ">" and mayor is not None:
-            contador += 1
-            resultado.append(mayor)
-        else:
-            resultado.append(ch)
-
-    nuevo = "".join(resultado)
-
-    # Insertar los números después de cada 'proof' encontrado
-    if marcadores:
-        partes = nuevo.split("proof")
-        reconstruido = partes[0]
-        for j, parte in enumerate(partes[1:]):
-            if j < len(marcadores):
-                reconstruido += "proof" + str(marcadores[j]) + parte
-            else:
-                reconstruido += "proof" + parte
-        nuevo = reconstruido
-
-    return nuevo
-
-
 def generar_combinaciones(texto):
     resultados = []
+    contador = 0
 
     # Pares sincronizados < >
     pares_tags = list(zip(
@@ -101,13 +64,21 @@ def generar_combinaciones(texto):
 
             nuevo = texto
 
+            if menor is not None:
+                nuevo = nuevo.replace("<", menor)
+
+            if mayor is not None:
+                nuevo = nuevo.replace(">", mayor)
+
             if simple is not None:
                 nuevo = nuevo.replace("'", simple)
 
             if doble is not None:
                 nuevo = nuevo.replace('"', doble)
 
-            nuevo = reemplazar_con_correlativo(nuevo, menor, mayor)
+            # Correlativo por cada combinación, insertado junto al 'proof'
+            contador += 1
+            nuevo = nuevo.replace("proof", f"proof{contador}", 1)
 
             resultados.append(nuevo)
 
